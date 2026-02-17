@@ -33,13 +33,18 @@ app.post("/votar", async (req, res) => {
     conn.release();
 
     res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
-  }
+ } catch (err) {
+    console.error("MYSQL ERROR:", err);
+    res.status(500).json({
+        success: false,
+        error: err.message,
+        code: err.code
+    });
+}
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("API lista en puerto", PORT);
 });
+
