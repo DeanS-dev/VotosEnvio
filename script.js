@@ -1,50 +1,36 @@
 import express from "express";
-import mysql from "mysql2/promise";
 import cors from "cors";
+import { Pool } from "pg";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 5
+const pool = new Pool({
+    host: "dpg-d6adpg7gi27c73d28ti0-a.virginia-postgres.render.com",
+    database: "votos_db_mc7x",
+    user: "votos_db_mc7x_user",
+    password: "TU_PASSWORD",
+    port: 5432,
 });
 
-// ENDPOINT PARA VOTAR
+// Endpoint para votar
 app.post("/votar", async (req, res) => {
-  try {
-    const { candidato } = req.body;
+    try {
+        const { candidato } = req.body;
+        if (!candidato) return res.status(400).json({ success: false });
 
-    if (!candidato) {
-      return res.status(400).json({ success: false });
+        await pool.query(
+            "INSERT INTO votos (candidato, ip_usuario) VALUES ($1, $2)",
+            [candidato, req.ip]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false });
     }
-
-    const conn = await pool.getConnection();
-    await conn.execute(
-      "INSERT INTO votos (candidato, ip_usuario) VALUES (?, ?)",
-      [candidato, req.ip]
-    );
-    conn.release();
-
-    res.json({ success: true });
- } catch (err) {
-    console.error("MYSQL ERROR:", err);
-    res.status(500).json({
-        success: false,
-        error: err.message,
-        code: err.code
-    });
-}
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("API lista en puerto", PORT);
-});
-
+app.listen(PORT, () => console.log(`API lista en puerto ${PORT}`));
